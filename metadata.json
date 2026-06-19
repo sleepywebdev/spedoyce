@@ -1,0 +1,6 @@
+{
+  "name": "Airless Basketball 3D Store",
+  "description": "An immersive, interactive 3D studio and checkout experience for the next-generation airless basketball with custom physical materials, light scattering, and scrolling animations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
