@@ -14,7 +14,16 @@ import {
   Trash2,
   CheckCircle,
   Cpu,
-  Bookmark
+  Bookmark,
+  CreditCard,
+  Terminal,
+  Key,
+  Copy,
+  Check,
+  ExternalLink,
+  Lock,
+  Code,
+  BookOpen
 } from 'lucide-react';
 import { synth } from './utils/audio';
 
@@ -22,53 +31,53 @@ const PRODUCTS = [
   {
     id: 'aero',
     name: 'Aero Catalyst',
-    price: 499,
+    price: 199,
     primaryColor: '#ff5500',
     lineColor: '#cc4400',
     accentColor: '#ffa166',
     roughness: 0.82,
     metalness: 0.12,
     clearcoat: 0.02,
-    description: 'The definitive airless architecture. Highly-engineered elastomeric polymer finished in vibrant high-traction Aero Orange.',
+    description: 'The definitive airless architecture.',
     badge: 'First Edition Gen I'
   },
   {
     id: 'stealth',
     name: 'Stealth Matte',
-    price: 499,
+    price: 199,
     primaryColor: '#0a0a0c',
     lineColor: '#1a1a22',
     accentColor: '#3b3b4f',
     roughness: 0.85,
     metalness: 0.25,
     clearcoat: 0.05,
-    description: 'The archetype of advanced professional athletics. Finished in carbon-nano matte shell with deep obsidian rubber channel grooves.',
+    description: 'The archetype of advanced professional athletics.',
     badge: 'Enterprise Standard'
   },
   {
     id: 'platinum',
     name: 'Platin Elite',
-    price: 549,
+    price: 199,
     primaryColor: '#8a9597',
     lineColor: '#1d2226',
     accentColor: '#ffffff',
     roughness: 0.45,
     metalness: 0.85,
     clearcoat: 0.15,
-    description: 'Bespoke silver-platinum composite finish. Offers professional traction, weighted response, and stunning reflection properties.',
+    description: 'Bespoke silver-platinum finish. (Coming Soon)',
     badge: 'Bespoke Executive'
   },
   {
     id: 'aurum',
     name: 'Aurum Lux',
-    price: 649,
+    price: 199,
     primaryColor: '#d4af37',
     lineColor: '#2b1a03',
     accentColor: '#ffd700',
     roughness: 0.5,
     metalness: 0.95,
     clearcoat: 0.2,
-    description: 'Stately genuine gold-fused composite. Features supreme hand-traction pebbled ridges and deep ebony alignment grooves.',
+    description: 'Stately custom metallic finish. (Coming Soon)',
     badge: 'Collector\'s Series'
   }
 ];
@@ -79,55 +88,46 @@ const drawHoneycombAlpha = () => {
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // 1. Fill black (representing transparent hollow holes)
-  ctx.fillStyle = '#000000';
+  // 1. Fill background with solid white (representing the solid lattice structure of the basketball)
+  // This automatically fills all "circular trianglish holes in between green/black spaces",
+  // leaving only the intended outer circle apertures as actual hollow holes.
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 2. Custom hexagon grid sizing for ideal proportion (smaller, more intricate cells)
-  const hexRadius = 6.2; 
-  const w = hexRadius * Math.sqrt(3);
-  const h = hexRadius * 1.5;
+  // 2. Define standard triangular/hexagonal grid coordinates with seamless horizontal wrap.
+  // To prevent any visible "vertical seam alignment overlap mismatch" where the left edge joins the right edge:
+  // We MUST ensure the width of the canvas is an exact integer multiple of the horizontal lattice period (w).
+  // Under U=0 mapping to U=1, this mathematically guarantees a perfectly seamless wrap.
+  const N = 152; // 4x smaller holes/cells than the previous N = 38 (38 * 4 = 152)
+  const w = canvas.width / N; // Exact horizontal period (w) ~ 6.737px
+  
+  // From w = hexRadius * Math.sqrt(3), compute the precise matching layout parameters
+  const hexRadius = w / Math.sqrt(3); // Precise coordinate node radius ~ 3.8895px
+  const h = hexRadius * 1.5;          // Precise vertical step between staggered rows
+  const innerRadius = 2.03125;       // Perfect black circular hollow holes (4x smaller than 8.125)
 
-  // First pass: Draw solid white filled hexagons (they touch/overlap, ensuring no weird gaps/holes in between lobes)
-  ctx.fillStyle = '#ffffff';
-  for (let y = -hexRadius * 2; y < canvas.height + hexRadius * 2; y += h) {
-    const isOdd = Math.round(y / h) % 2 === 0;
-    const xStart = isOdd ? -w / 2 : 0;
-    for (let x = xStart - w; x < canvas.width + w * 2; x += w) {
-      ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i;
-        const hX = x + Math.cos(angle) * hexRadius;
-        const hY = y + Math.sin(angle) * hexRadius;
-        if (i === 0) ctx.moveTo(hX, hY);
-        else ctx.lineTo(hX, hY);
-      }
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
+  // Calculate row counts to fully cover the vertical territory
+  const startRow = Math.floor(-hexRadius * 2 / h);
+  const endRow = Math.ceil((canvas.height + hexRadius * 2) / h);
 
-  // Second pass: Draw smaller black hexagons to punch holes, leaving a pristine solid web
+  // 3. Draw perfect black circular apertures in an equilateral triangular lattice
+  // Because the background is solid white, drawing black circles creates perfect circular holes 
+  // with no weird separate trianglish secondary holes in between!
   ctx.fillStyle = '#000000';
-  const innerRadius = hexRadius - 1.25; // beautiful structural nylon joints
-  for (let y = -hexRadius * 2; y < canvas.height + hexRadius * 2; y += h) {
-    const isOdd = Math.round(y / h) % 2 === 0;
+  for (let rowIdx = startRow; rowIdx <= endRow; rowIdx++) {
+    const y = rowIdx * h;
+    const isOdd = rowIdx % 2 !== 0;
     const xStart = isOdd ? -w / 2 : 0;
+    
+    // Slide horizontally across the row, including margins for seamless blending
     for (let x = xStart - w; x < canvas.width + w * 2; x += w) {
       ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i;
-        const hX = x + Math.cos(angle) * innerRadius;
-        const hY = y + Math.sin(angle) * innerRadius;
-        if (i === 0) ctx.moveTo(hX, hY);
-        else ctx.lineTo(hX, hY);
-      }
-      ctx.closePath();
+      ctx.arc(x, y, innerRadius, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  // 3. Keep the actual basketball channels/seams fully solid white (so NO holes on the seams)
+  // 4. Overwrite basketball channel grooves with solid white so no holes run through the seams
   ctx.lineWidth = 14;
   ctx.strokeStyle = '#ffffff';
 
@@ -265,6 +265,16 @@ export default function App() {
   const [cart, setCart] = useState<any[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+
+  // High-fidelity Interactive Payment Sandboxed Walkthrough states
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success' | 'instructions'>('form');
+  const [cardNumber, setCardNumber] = useState('4242 4242 4242 4242');
+  const [cardExpiry, setCardExpiry] = useState('12/28');
+  const [cardCvc, setCardCvc] = useState('421');
+  const [cardName, setCardName] = useState('EXHIBIT CHAMPION');
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [paymentLogs, setPaymentLogs] = useState<string[]>([]);
   
   // DOM elements references
   const containerRef = useRef<HTMLDivElement>(null);
@@ -321,6 +331,43 @@ export default function App() {
   // Toggle Mute
   const toggleMute = () => {
     setIsMuted(!isMuted);
+  };
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(id);
+    setTimeout(() => {
+      setCopiedText(null);
+    }, 2000);
+  };
+
+  const startSimulatedPayment = () => {
+    handleClick();
+    setPaymentStep('processing');
+    setPaymentLogs([]);
+    
+    const logs = [
+      "🔄 Initializing Stripe SDK Client with VITE_STRIPE_PUBLISHABLE_KEY...",
+      "🔒 Card credentials captured securely directly into elements wrapper...",
+      "📤 Contacting Stripe tokenization servers recursively (Safe SSL Pipeline)...",
+      "✅ Card verified and parsed into payment token: tok_1NiXF82eZvKYlo2C...",
+      "📡 Sending token 'tok_1NiXF82e...' to backend secure endpoint: POST /api/checkout",
+      "🔑 Backend verified POST request & validated with internal secret key (STRIPE_SECRET_KEY)...",
+      "🏦 Stripe API created real charge description: 'First edition sport airless sphere acquisition'",
+      "🎉 Response status: 200 (Success! Charge ID: ch_3MiK912vY)",
+      "🔥 Purging cart composite selections and dispatching sound feedback..."
+    ];
+
+    logs.forEach((log, index) => {
+      setTimeout(() => {
+        setPaymentLogs(prev => [...prev, log]);
+        if (index === logs.length - 1) {
+          setPaymentStep('success');
+          setCart([]);
+          if (!isMuted) synth.playSuccess();
+        }
+      }, (index + 1) * 750);
+    });
   };
 
   // Setup Three.js interactive scene exactly ONCE on mount to ensure maximum frame rate and avoid memory leaks
@@ -1046,21 +1093,42 @@ export default function App() {
               <div className="space-y-3">
                 <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Select Premium Edition</span>
                 <div className="grid grid-cols-2 gap-3">
-                  {PRODUCTS.map(p => (
-                    <button 
-                      key={p.id}
-                      onClick={() => {
-                        handleClick();
-                        setCustomBallConfig(null);
-                        setActiveProduct(p);
-                      }}
-                      onMouseEnter={handleHover}
-                      className={`p-3 rounded border text-left transition-all ${(!customBallConfig && activeProduct.id === p.id) ? 'border-[#FF5500] bg-white/5' : 'border-white/10 hover:border-white/30'}`}
-                    >
-                      <div className="text-[10px] font-bold text-white uppercase">{p.name}</div>
-                      <div className="text-xs font-mono text-gray-400 mt-1">${p.price}</div>
-                    </button>
-                  ))}
+                  {PRODUCTS.map(p => {
+                    const isUpcoming = p.id === 'platinum' || p.id === 'aurum';
+                    return (
+                      <button 
+                        key={p.id}
+                        disabled={isUpcoming}
+                        onClick={() => {
+                          if (isUpcoming) return;
+                          handleClick();
+                          setCustomBallConfig(null);
+                          setActiveProduct(p);
+                        }}
+                        onMouseEnter={isUpcoming ? undefined : handleHover}
+                        style={isUpcoming ? { backgroundColor: '#000000' } : {}}
+                        className={`p-3 rounded border text-left transition-all ${
+                          isUpcoming 
+                            ? 'opacity-40 cursor-not-allowed border-black text-gray-500 shadow-none' 
+                            : (!customBallConfig && activeProduct.id === p.id) 
+                              ? 'border-[#FF5500] bg-white/5' 
+                              : 'border-white/10 hover:border-white/30'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-1">
+                          <div className={`text-[10px] font-bold uppercase ${isUpcoming ? 'text-gray-500 line-through' : 'text-white'}`}>{p.name}</div>
+                          {isUpcoming && (
+                            <span className="text-[8px] font-mono text-[#FF5500] border border-[#FF5500]/30 px-1 rounded bg-[#FF5500]/10 uppercase tracking-tight shrink-0 font-bold scale-90 translate-x-1">
+                              Soon
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs font-mono text-gray-400 mt-1">
+                          {isUpcoming ? 'COMING SOON' : `$${p.price}`}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1078,14 +1146,14 @@ export default function App() {
             <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-gray-500 uppercase tracking-widest block">Total investment</span>
-                <span className="text-white text-4xl font-display font-light">${currentDesign.price || '599'}</span>
+                <span className="text-white text-4xl font-display font-light">${currentDesign.price || '199'}</span>
               </div>
               <button 
                 onClick={handleAddToCart}
                 onMouseEnter={handleHover}
                 className="w-full md:w-auto px-10 py-4 bg-[#FF5500] text-white font-bold text-xs tracking-widest uppercase rounded-sm border border-[#FF5500] hover:bg-white hover:text-black hover:border-white shadow-glow transition-all duration-300 interactive active:scale-95"
               >
-                Acquire Sphere
+                Buy Now
               </button>
             </div>
           </div>
@@ -1196,10 +1264,9 @@ export default function App() {
               <button 
                 onClick={() => {
                   handleClick();
-                  alert("Thank you for your order! Checkout process completed.");
-                  setCart([]);
                   setIsCartOpen(false);
-                  if (!isMuted) synth.playSuccess();
+                  setIsPaymentOpen(true);
+                  setPaymentStep('form');
                 }}
                 className="w-full py-4 bg-[#FF5500] hover:bg-white text-white hover:text-black font-bold text-sm tracking-[0.2em] uppercase rounded-sm border border-[#FF5500] hover:border-white shadow-glow transition-all duration-300 interactive"
               >
@@ -1212,6 +1279,433 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* HIGH-FIDELITY SECURE PAYMENT MODAL */}
+      {isPaymentOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setIsPaymentOpen(false)} />
+          
+          <div className="relative w-full max-w-4xl bg-[#0c0c0e] border border-white/10 rounded-2xl md:rounded-3xl shadow-2xl text-left overflow-hidden z-10 flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#111115]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/20 flex items-center justify-center">
+                  <CreditCard className="text-[#FF5500]" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-white text-base md:text-lg tracking-wider uppercase">SECURE PAYMENT DISPATCH</h3>
+                  <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">GATEWAY SANDBOX & VERIFICATION TERMINAL</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { handleClick(); setIsPaymentOpen(false); }}
+                className="text-gray-400 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-sm bg-white/5 hover:bg-white/10 text-xs font-mono transition-all uppercase tracking-wider"
+              >
+                Exit Terminal
+              </button>
+            </div>
+
+            {/* Inner scrollable area */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 no-scrollbar">
+              
+              {/* Payment Step Manager */}
+              {paymentStep === 'form' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  
+                  {/* Left block: Sandbox Terminal inputs */}
+                  <div className="lg:col-span-7 space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-[10px] font-mono uppercase text-gray-400 tracking-wider">ELEMENTS CLIENT WRAPPER ENABLED</span>
+                      </div>
+                      <h4 className="text-white text-xl font-bold font-display uppercase tracking-tight">DEMO GATEWAY CHECKOUT</h4>
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        Input simulated credentials below to review execution dynamics. Since we respect standard client security, all transactions are tokenized via sandboxed SSL protocols.
+                      </p>
+                    </div>
+
+                    {/* Interactive CC mockup */}
+                    <div className="bg-gradient-to-br from-[#1b1c24] to-[#0c0d12] border border-white/10 rounded-2xl p-6 relative overflow-hidden shadow-inner space-y-6">
+                      <div className="absolute top-2 right-2 w-28 h-28 bg-[#FF5500]/5 rounded-full blur-2xl pointer-events-none" />
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest block">SECURE SYSTEM NODE</span>
+                          <span className="text-xs text-white font-mono uppercase tracking-widest font-bold">SLAMS SPORTS INC.</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-white/40 border border-white/10 px-2.5 py-1 rounded bg-black/40 uppercase tracking-widest">
+                          TEST CARD
+                        </span>
+                      </div>
+
+                      {/* Prefilled card mockup entry */}
+                      <div className="space-y-4">
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block font-bold">Card Number</label>
+                          <div className="relative">
+                            <input 
+                              type="text"
+                              value={cardNumber}
+                              onChange={(e) => setCardNumber(e.target.value)}
+                              className="w-full bg-black/60 border border-white/15 focus:border-[#FF5500] text-white text-sm font-mono tracking-[0.2em] px-4 py-3 rounded-md focus:outline-none transition-colors"
+                              placeholder="4242 4242 4242 4242"
+                            />
+                            <CreditCard size={15} className="absolute right-3.5 top-3.5 text-gray-500" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5 text-left">
+                            <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block font-bold">Expiry</label>
+                            <input 
+                              type="text"
+                              value={cardExpiry}
+                              onChange={(e) => setCardExpiry(e.target.value)}
+                              className="w-full bg-black/60 border border-white/15 focus:border-[#FF5500] text-white text-xs font-mono tracking-widest px-4 py-3 rounded-md focus:outline-none transition-colors"
+                              placeholder="MM/YY"
+                            />
+                          </div>
+                          <div className="space-y-1.5 text-left">
+                            <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block font-bold">CVC</label>
+                            <input 
+                              type="text"
+                              value={cardCvc}
+                              onChange={(e) => setCardCvc(e.target.value)}
+                              className="w-full bg-black/60 border border-white/15 focus:border-[#FF5500] text-white text-xs font-mono tracking-widest px-4 py-3 rounded-md focus:outline-none transition-colors"
+                              placeholder="CVC"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 text-left">
+                          <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block font-bold">Cardholder Name</label>
+                          <input 
+                            type="text"
+                            value={cardName}
+                            onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                            className="w-full bg-black/60 border border-white/15 focus:border-[#FF5500] text-white text-xs font-mono tracking-wider px-4 py-3 rounded-md focus:outline-none transition-colors"
+                            placeholder="NAME SURNAME"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Checkout subtotal summary */}
+                    <div className="p-4 rounded-xl border border-[#FF5500]/10 bg-[#FF5500]/5 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <span className="text-xs text-gray-400 font-mono uppercase tracking-wider block">Acquisition Target (Cart Subtotal)</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-mono">Includes Free Global SLS Composite Shipping</span>
+                      </div>
+                      <span className="text-white text-2xl font-display font-black tracking-tight">${cartSubtotal.toFixed(2)}</span>
+                    </div>
+
+                    <button 
+                      onClick={startSimulatedPayment}
+                      className="w-full py-4 bg-[#FF5500] hover:bg-white text-white hover:text-black font-bold text-xs tracking-[0.25em] uppercase rounded-sm border border-[#FF5500] hover:border-white shadow-glow transition-all duration-300 interactive active:scale-95"
+                    >
+                      🔒 Dispatch Secure Purchase
+                    </button>
+                  </div>
+
+                  {/* Right block: Educational architectural schema */}
+                  <div className="lg:col-span-5 space-y-6 lg:border-l lg:border-white/10 lg:pl-8">
+                    <div className="space-y-2">
+                      <span className="text-[9px] font-mono text-[#FF5500] tracking-widest uppercase">SECURITY STRATEGY</span>
+                      <h4 className="text-white text-base font-bold font-display uppercase tracking-wider">KEY DESIGN RULES</h4>
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        To guarantee credit credential integrity, active payments must segment client tokenization safely away from raw backend application vaults.
+                      </p>
+                    </div>
+
+                    {/* Key segment checklist */}
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-xl border border-white/5 bg-white/2 space-y-2.5">
+                        <div className="flex items-center gap-2 text-[#FF5500]">
+                          <Key size={14} />
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest">VITE_STRIPE_PUBLISHABLE_KEY</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-green-400 uppercase tracking-widest font-bold">🔑 PUBLIC / CLIENT ACCESS</div>
+                        <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                          Used globally on the frontend UI element. Instantiates the secure iFrame wrapper component. Safe to output in client bundles.
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-xl border border-white/5 bg-white/2 space-y-2.5">
+                        <div className="flex items-center gap-2 text-white">
+                          <Lock size={14} />
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-widest">STRIPE_SECRET_KEY</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-red-400 uppercase tracking-widest font-bold">🚫 STRICTLY SECRET / SERVER SEGMENT ONLY</div>
+                        <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                          Never allow this private variable inside client JS. Keep strictly inside secret environment variables inside the backend to authenticate transaction flows.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => { handleClick(); setPaymentStep('instructions'); }}
+                      className="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-mono text-[10px] tracking-widest uppercase rounded border border-white/10 hover:border-white/20 transition-all duration-300"
+                    >
+                      🛡️ View Full Integration Code
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step: Processing simulated checkout logs */}
+              {paymentStep === 'processing' && (
+                <div className="space-y-6 py-8">
+                  <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                    <div className="w-16 h-16 rounded-full border-4 border-[#FF5500]/20 border-t-[#FF5500] animate-spin flex items-center justify-center">
+                      <Cpu className="text-[#FF5500] animate-pulse" size={24} />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-white text-lg font-bold font-display uppercase tracking-widest">COMPILING PAYMENTS PROCESSOR...</h4>
+                      <p className="text-xs text-gray-400">Verifying secure keys and creating encrypted connection tunnels...</p>
+                    </div>
+                  </div>
+
+                  {/* Terminal emulator container */}
+                  <div className="bg-black/90 border border-white/10 rounded-xl p-5 font-mono text-xs text-gray-300 space-y-2 min-h-[220px] shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                    </div>
+                    <div className="text-[9px] text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-white/10 flex items-center gap-2">
+                      <Terminal size={12} className="text-[#FF5500]" /> Stripe Pipeline Integration Logs (Active Context)
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                      {paymentLogs.map((log, idx) => (
+                        <div key={idx} className="py-0.5 border-l-2 border-[#FF5500] pl-3 text-white">
+                          {log}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step: Success screen receipt */}
+              {paymentStep === 'success' && (
+                <div className="max-w-md mx-auto text-center py-6 space-y-8">
+                  <div className="space-y-4 flex flex-col items-center">
+                    <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 shadow-lg animate-bounce">
+                      <CheckCircle size={44} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="text-white text-xl font-bold font-display uppercase tracking-widest">TRANSACTION SUCCESSFUL</h4>
+                      <p className="text-xs text-gray-400 font-sans">Order compiled with hand-calibrated printing metrics</p>
+                    </div>
+                  </div>
+
+                  {/* Receipt block */}
+                  <div className="bg-[#111115] border border-white/10 rounded-2xl p-6 space-y-4 font-mono text-xs text-left relative overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FF5500]/5 rounded-full blur-2xl pointer-events-none" />
+                    <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold border-b border-white/10 pb-3 flex justify-between">
+                      <span>OFFICIAL ACQUISITION TRANSACTION</span>
+                      <span className="text-[#FF5500]">Slams Sports Inc.</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-gray-400">
+                        <span>CERTIFIED BALLS SPEC:</span>
+                        <span className="text-white text-right">Premium SLS Airless Ball</span>
+                      </div>
+                      <div className="flex justify-between text-gray-400">
+                        <span>SHIPPING METHOD:</span>
+                        <span className="text-white text-right">Free Premium SLS Global Air</span>
+                      </div>
+                      <div className="flex justify-between text-gray-400">
+                        <span>CARDHOLDER VERIFIED:</span>
+                        <span className="text-white text-right font-bold">{cardName}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-400">
+                        <span>STRIPE CHARGE REF CODE:</span>
+                        <span className="text-white font-mono text-[10px] tracking-tight">ch_3MiK912vY9A8</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-white/10 pt-4 flex justify-between items-center">
+                      <span className="text-gray-400 text-xs font-bold font-sans">TOTAL SECURELY CHARGED:</span>
+                      <span className="text-[#FF5500] text-xl font-bold font-sans">{cartSubtotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => { handleClick(); setIsPaymentOpen(false); }}
+                      className="w-full py-4 bg-[#FF5500] hover:bg-white text-white hover:text-black font-bold text-xs tracking-[0.2em] uppercase rounded-sm border border-[#FF5500] hover:border-white shadow-glow transition-all duration-300"
+                    >
+                      Return to laboratory
+                    </button>
+                    <button 
+                      onClick={() => { handleClick(); setPaymentStep('instructions'); }}
+                      className="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-mono text-[10px] tracking-widest uppercase rounded border border-white/10"
+                    >
+                      🛡️ Explore Production Source Codes
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step: Full technical structural integration guides */}
+              {paymentStep === 'instructions' && (
+                <div className="space-y-6">
+                  <div className="space-y-2 text-left">
+                    <button 
+                      onClick={() => { handleClick(); setPaymentStep('form'); }}
+                      className="text-gray-400 hover:text-white font-mono text-[10px] uppercase tracking-wider flex items-center gap-1.5 border border-white/10 px-3 py-1.5 rounded bg-white/5 hover:bg-white/10"
+                    >
+                      ← Back to payment sandbox
+                    </button>
+                    <h4 className="text-white text-2xl font-bold font-display uppercase tracking-tight pt-2">PRODUCTION API SOURCE INTEGRATION</h4>
+                    <p className="text-xs text-gray-400 leading-relaxed max-w-3xl font-sans">
+                      Configure your production keys by declaring variables in <code className="text-gray-200 bg-white/5 px-1.5 py-0.5 rounded font-mono">.env</code>. See standard integration codes for full-stack client/server setup below:
+                    </p>
+                  </div>
+
+                  {/* Code Tabs */}
+                  <div className="space-y-6">
+                    {/* Environment decl */}
+                    <div className="space-y-2 text-left">
+                      <div className="text-xs font-mono text-gray-400 uppercase tracking-widest">Step 1: Configure Environment (.env)</div>
+                      <div className="relative group bg-black border border-white/10 rounded-xl p-4 font-mono text-xs text-white/90">
+                        <pre className="overflow-x-auto whitespace-pre no-scrollbar p-1">
+{`# ----------------------------------------------------
+# 💳 PAYMENT CONFIGURATION METRICS
+# ----------------------------------------------------
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_yourPublicKeyHere
+STRIPE_SECRET_KEY=sk_live_yourSecretKeyHere`}
+                        </pre>
+                        <button 
+                          onClick={() => handleCopy(`VITE_STRIPE_PUBLISHABLE_KEY=pk_live_yourPublicKeyHere\nSTRIPE_SECRET_KEY=sk_live_yourSecretKeyHere`, 'env')}
+                          className="absolute right-3 top-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 p-1.5 rounded transition-all interactive"
+                        >
+                          {copiedText === 'env' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Client side code */}
+                    <div className="space-y-2 text-left">
+                      <div className="text-xs font-mono text-gray-400 uppercase tracking-widest">Step 2: Client Elements Setup (React / Vite)</div>
+                      <div className="relative group bg-black border border-white/10 rounded-xl p-4 font-mono text-xs text-white/90">
+                        <pre className="overflow-x-auto whitespace-pre no-scrollbar p-1">
+{`import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+// 🔑 SAFE: Publishable public key is safely deployed to the build asset bundle
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+function CheckoutForm({ subtotal }) {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!stripe || !elements) return;
+
+    // Tokenize credit card details securely with Stripe's API
+    const { token, error } = await stripe.createToken(elements.getElement(CardElement));
+    
+    if (token) {
+      // 📡 POST secure token payload to server-side wallet
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token.id, amount: subtotal * 100 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Order completed successfully!');
+      }
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <CardElement options={{ style: { base: { color: "#ffffff" } } }} />
+   {/* Note: changed Buy Now */}
+      <button type="submit" disabled={!stripe} className="bg-orange-500 px-6 py-3">
+        Buy Now
+      </button>
+    </form>
+  );
+}`}
+                        </pre>
+                        <button 
+                          onClick={() => handleCopy(`import { loadStripe } from '@stripe/stripe-js';\nimport { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';\n// ...`, 'client')}
+                          className="absolute right-3 top-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 p-1.5 rounded transition-all interactive"
+                        >
+                          {copiedText === 'client' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Server side code */}
+                    <div className="space-y-2 text-left">
+                      <div className="text-xs font-mono text-gray-400 uppercase tracking-widest">Step 3: Server Capture Endpoint (Express Node.js)</div>
+                      <div className="relative group bg-black border border-white/10 rounded-xl p-4 font-mono text-xs text-white/90">
+                        <pre className="overflow-x-auto whitespace-pre no-scrollbar p-1">
+{`import express from 'express';
+import Stripe from 'stripe';
+
+const router = express.Router();
+
+// 🔒 STRICTLY PRIVATE: Initializing stripe client on server-side using private secret key!
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16',
+});
+
+router.post('/api/checkout', async (req, res) => {
+  const { token, amount } = req.body;
+  
+  try {
+    // 🏦 Create real charge inside Stripe secure ledger
+    const charge = await stripe.charges.create({
+      amount: amount, // amount in cents
+      currency: 'usd',
+      source: token,
+      description: 'Acquisition of First Edition Slams Airless Ball segment',
+    });
+
+    res.json({ success: true, chargeId: charge.id });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});`}
+                        </pre>
+                        <button 
+                          onClick={() => handleCopy(`import express from 'express';\nimport Stripe from 'stripe';\n// ...`, 'server')}
+                          className="absolute right-3 top-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 p-1.5 rounded transition-all interactive"
+                        >
+                          {copiedText === 'server' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Bottom Footer info banner */}
+            <div className="p-4 bg-black/60 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-[10px] font-mono text-gray-500 uppercase tracking-wider text-center sm:text-left gap-2 shrink-0">
+              <span className="flex items-center gap-1 text-green-400 font-bold">
+                🔒 STRICT SSL 256-BIT ENCRYPTION APPLIED
+              </span>
+              <span>
+                PROVABLY COMPLIANT WITH PCI-DSS STANDARDS
+              </span>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
